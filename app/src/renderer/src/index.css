@@ -1,0 +1,84 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  line-height: 1.6;
+  font-weight: 400;
+  color-scheme: dark;
+  color: #e6eef9;
+  background-color: #05070d;
+  accent-color: #1ad2a4;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-variant-ligatures: contextual;
+}
+
+a {
+  font-weight: 500;
+  color: #18a6f2;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: #1ad2a4;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+}
+
+body {
+  min-width: 320px;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.4em;
+  font-size: 1em;
+  font-weight: 600;
+  font-family: inherit;
+  background: linear-gradient(135deg, rgba(24,166,242,0.22), rgba(26,210,164,0.18));
+  color: #031b2f;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 30px -18px rgba(24,166,242,0.6);
+}
+
+button:focus,
+button:focus-visible {
+  outline: 2px solid rgba(24,166,242,0.5);
+  outline-offset: 2px;
+}
+
+code {
+  background-color: rgba(15, 22, 31, 0.85);
+  padding: 2px 6px;
+  margin: 0 4px;
+  border-radius: 6px;
+  border: 1px solid rgba(24,166,242,0.15);
+}

@@ -1,0 +1,24 @@
+{
+  "id": "bambu-x1c",
+  "name": "Bambu Lab X1C",
+  "manufacturer": "Bambu Lab",
+  "model": "X1C",
+  "version": "1.0.0",
+  "hardware": {
+    "nozzleDiameters": [0.2, 0.4, 0.6, 0.8],
+    "nozzleLength": 25.0,
+    "cutterPosition": { "x": 120, "y": 255, "z": 0 },
+    "filamentDiameter": 1.75,
+    "meltZoneVolume": 48.0,
+    "maxFlowRate": 22.0,
+    "hasCutter": true,
+    "hasAMS": true
+  },
+  "gcode": {
+    "home": "G28",
+    "moveToChuteArea": "G1 X70 F21000\nG1 Y245\nG1 Y265 F3000",
+    "cutFilament": "G1 X90\nG1 Y255 F4000\nG1 X100 F5000\nG1 X120 F15000\nG1 X20 Y50 F21000\nG1 Y-3",
+    "moveToChuteAndWipeNozzle": "G1 X70 F21000\nG1 Y245\nG1 Y265 F3000\nG1 X70 F5000\nG1 X90 F3000\nG1 Y255 F4000\nG1 X105 F5000\nG1 Y265\nG1 X70 F10000\nG1 X100 F5000\nG1 X70 F10000\nG1 X100 F5000\nG1 X70 F10000\nG1 X80 F15000\nG1 X60\nG1 X80\nG1 X60\nG1 X80 \nG1 X100 F5000\nG1 X165 F15000\nG1 Y256\nM400",
+    "wipeNozzle": "G1 X70 F5000\nG1 X90 F3000\nG1 Y255 F4000\nG1 X105 F5000\nG1 Y265\nG1 X70 F10000\nG1 X100 F5000\nG1 X70 F10000\nG1 X100 F5000\nG1 X70 F10000\nG1 X80 F15000\nG1 X60\nG1 X80\nG1 X60\nG1 X80 \nG1 X100 F5000\nG1 X165 F15000\nG1 Y256\nM400"
+  }
+}

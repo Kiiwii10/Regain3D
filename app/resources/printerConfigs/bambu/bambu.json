@@ -1,0 +1,44 @@
+{
+  "detection": {
+    "headerPatterns": ["BambuStudio"],
+    "commandSignatures": ["M620", "M621"],
+    "priority": 100
+  },
+  "changeSequence": {
+    "startTriggers": ["M620"],
+    "endMarkers": ["M621"],
+    "purgePatterns": ["G1 E[\\d.]+ F[\\d.]+"],
+    "cutterCommands": ["G1 X120 F15000"],
+    "preserveCommands": ["M104", "M109", "M140", "M190"]
+  },
+  "injection": {
+    "templates": {
+      "prePurge": "; --- Start Purge ---\n{gcode.moveToChuteArea}",
+      "purgeStage1": "G1 E{pure_purge_length} F300 ; Pure Purge",
+      "espPause": "M400\nM117 PURE_PURGE_COMPLETE",
+      "purgeStage2": "G1 E{mixed_purge_length} F450 ; Mixed Purge",
+      "postPurge": "M400\n; --- End Purge ---",
+      "wipeSequence": "{gcode.wipeNozzle}"
+    },
+    "espProtocol": {
+      "commandFormat": "M117",
+      "messages": {
+        "changeStart": "PURGE_START",
+        "purePurgeStart": "PURE_PURGE_START",
+        "purePurgeEnd": "PURE_PURGE_END",
+        "mixedPurgeStart": "MIXED_PURGE_START",
+        "mixedPurgeEnd": "MIXED_PURGE_END",
+        "changeEnd": "PURGE_END",
+        "valveSwitch": "VALVE_SWITCH V{valve_index}"
+      }
+    },
+    "variables": {}
+  },
+  "calculations": {
+    "safetyFactor": 0.9,
+    "minPurgeLength": 5.0,
+    "maxPurgeLength": 999.0,
+    "usePulsedPurge": false,
+    "temperatureAdjustment": true
+  }
+}

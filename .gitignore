@@ -1,0 +1,5 @@
+app/node_modules/
+phone/android/.gradle/
+POC_firmware/.pio/
+app_ref/
+gcode_processor/plate_1.gcode

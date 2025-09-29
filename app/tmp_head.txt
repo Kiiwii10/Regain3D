@@ -1,0 +1,200 @@
+// electron/gcode/core/GCodeInjector.ts
+
+import { GCodeParser } from './GCodeParser'
+import { PrinterProfile } from '../types/profile.types'
+import { ParsedGCode } from '../types/gcode.types'
+import {
+  FilamentChange,
+  PurgeCalculation,
+  WasteEstimate,
+  FilamentType
+} from '../types/filament.types'
+
+export interface InjectionOptions {
+  profile?: PrinterProfile
+  autoDetectProfile?: boolean
+  preserveOriginal?: boolean
+  addComments?: boolean
+  espEnabled?: boolean
+  valveMapping?: Map<string, number>
+}
+
+export interface InjectionResult {
+  success: boolean
+  modifiedGCode?: string
+  originalGCode: string
+  changes: FilamentChange[]
+  calculations: PurgeCalculation[]
+  wasteEstimate?: WasteEstimate
+  profile: PrinterProfile | null
+  errors: string[]
+  warnings: string[]
+}
+
+export class GCodeInjector {
+  private parser: GCodeParser
+  private profiles: PrinterProfile[] = []
+
+  constructor() {
+    this.parser = new GCodeParser()
+  }
+
+  /**
+   * Register a printer profile
+   */
+  registerProfile(profile: PrinterProfile): void {
+    this.profiles.push(profile)
+  }
+
+  /**
+   * Clear all registered profiles
+   */
+  clearProfiles(): void {
+    this.profiles = []
+  }
+
+  /**
+   * Process G-code file with two-stage purging injection
+   */
+  async process(gcode: string, options: InjectionOptions = {}): Promise<InjectionResult> {
+    const result: InjectionResult = {
+      success: false,
+      originalGCode: gcode,
+      changes: [],
+      calculations: [],
+      profile: null,
+      errors: [],
+      warnings: []
+    }
+
+    try {
+      // Parse G-code
+      const parsed = this.parser.parse(gcode)
+
+      // Select or detect profile
+      const profile = options.profile || this.detectProfile(parsed)
+      if (!profile) {
+        result.errors.push('No suitable printer profile found')
+        return result
+      }
+      result.profile = profile
+
+      // Detect filament changes
+      const changes = this.detectFilamentChanges(parsed, profile)
+      if (changes.length === 0) {
+        result.warnings.push('No filament changes detected')
+        result.success = true
+        result.modifiedGCode = gcode
+        return result
+      }
+      result.changes = changes
+
+      // Calculate purge volumes for each change
+      const calculations: PurgeCalculation[] = []
+      changes.forEach((change) => {
+        const calc = this.calculatePurgeVolumes(change, change.originalPurgeLength, profile)
+        calculations.push(calc)
+        change.calculation = calc
+      })
+      result.calculations = calculations
+
+      // Generate modified G-code
+      const modified = this.injectTwoStagePurging(parsed, changes, profile, options)
+      result.modifiedGCode = modified
+
+      // Calculate waste estimate
+      result.wasteEstimate = this.calculateWasteEstimate(changes, calculations)
+
+      result.success = true
+    } catch (error) {
+      result.errors.push(`Processing error: ${error}`)
+    }
+
+    return result
+  }
+
+  /**
+   * Detect the best matching profile for the G-code
+   */
+  private detectProfile(parsed: ParsedGCode): PrinterProfile | null {
+    let bestProfile: PrinterProfile | null = null
+    let bestScore = 0
+
+    for (const profile of this.profiles) {
+      const score = this.calculateProfileMatchScore(parsed, profile)
+      if (score > bestScore) {
+        bestScore = score
+        bestProfile = profile
+      }
+    }
+
+    return bestScore > 0 ? bestProfile : null
+  }
+
+  /**
+   * Inject two-stage purging into the G-code
+   */
+  private calculateProfileMatchScore(parsed: ParsedGCode, profile: PrinterProfile): number {
+    let score = 0
+
+    // Check header patterns
+    for (const pattern of profile.detection.headerPatterns) {
+      for (const line of parsed.raw.slice(0, 50)) {
+        // Check first 50 lines
+        if (new RegExp(pattern).test(line)) {
+          score += 10
+          break
+        }
+      }
+    }
+
+    // Check command signatures
+    for (const signature of profile.detection.commandSignatures) {
+      if (parsed.commands.some((cmd) => cmd.command === signature)) {
+        score += 5
+      }
+    }
+
+    // Check metadata
+    if (parsed.metadata.generator?.toLowerCase().includes(profile.manufacturer.toLowerCase())) {
+      score += 20
+    }
+
+    if (parsed.metadata.printerModel?.toLowerCase().includes(profile.model.toLowerCase())) {
+      score += 30
+    }
+
+    return score * profile.detection.priority
+  }
+
+  private detectFilamentChanges(gcode: ParsedGCode, profile: PrinterProfile): FilamentChange[] {
+    const changes: FilamentChange[] = []
+    const { startTriggers, endMarkers, purgePatterns } = profile.changeSequence
+    let inChangeBlock = false
+    let currentChange: Partial<FilamentChange> = {}
+    let blockCommands: ParsedGCode['commands'] = []
+
+    for (const command of gcode.commands) {
+      if (startTriggers.some((trigger) => command.command?.startsWith(trigger))) {
+        inChangeBlock = true
+        currentChange = {
+          startLine: command.lineNumber,
+          index: changes.length,
+          fromTool: changes.length > 0 ? changes[changes.length - 1].toTool : 0,
+          toTool: command.parameters.get('S') as number
+        }
+        blockCommands = [command]
+      } else if (inChangeBlock) {
+        blockCommands.push(command)
+        if (endMarkers.some((marker) => command.command === marker)) {
+          inChangeBlock = false
+          currentChange.endLine = command.lineNumber
+
+          // Extract purge length from the block
+          let purgeLength = 0
+          for (const blockCmd of blockCommands) {
+            if (blockCmd.command === 'G1' && blockCmd.parameters.has('E')) {
+              for (const pattern of purgePatterns) {
+                if (new RegExp(pattern).test(blockCmd.raw)) {
+                  purgeLength += blockCmd.parameters.get('E') as number
+                  break

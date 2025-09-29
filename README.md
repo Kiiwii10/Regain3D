@@ -2,7 +2,7 @@
 
 Reduce 3D-printing purge waste and improve multi-material workflows. Regain3D is a monorepo that brings together a desktop app, firmware, and a provisioning mobile app to detect filament changes, inject smarter G-code, and route "pure" vs "mixed" purge material using ESP-controlled valves.
 
-Status: This repository is pre-release and archived. Development stopped due to industry shifts toward multi-head architectures and nozzle-swap systems that reduce or eliminate purge towers.
+Status: This repository is pre-release and archived. Development stopped due to industry shifts toward multi-head architectures and nozzle-swap systems that reduce or eliminate "purge poop".
 
 Note: The code contains known bugs and incomplete pipelines. Treat this as a reference implementation.
 
